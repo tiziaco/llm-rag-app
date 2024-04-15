@@ -1,0 +1,13 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyc
+*$py.class
+*.DS_Store
+
+# File extensions
+*.pdf
+*.epub
+*.gguf
+*.ipynb
+.env
