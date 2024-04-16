@@ -1,8 +1,11 @@
 import os
+from typing import Iterator, Dict
 
 from llama_index.llms.ollama import Ollama
 from .base import BaseRag
 from .modules.db import Database
+from .modules.query import RAGQueryEngine
+from llama_index.core.llms import ChatMessage
 
 from . import logger
 
@@ -21,6 +24,7 @@ class Rag(BaseRag):
 		# Init modules
 		self.ingest = BaseRag.init_ingestor(self.index, self.embed_model)
 		self.retriever = BaseRag.init_retriever(self.vector_store, self.embed_model)
+		self.query_engine = RAGQueryEngine(self.retriever, self.llm)
 		# Init system attributes
 		self.chat_history = BaseRag.init_chat()
 	
@@ -66,3 +70,42 @@ class Rag(BaseRag):
 		
 		# Clear the chat and set the new context
 		self.clean_chat_history()
+	
+	def get_last_user_message(self):
+		"""
+		This function retrieves the content of the last element with 
+		role 'user' from a list of dictionaries.
+
+		Returns:
+			str: The last user message or None if not found.
+		"""
+
+		# Iterate in reverse order to find the last element with role 'user'
+		for element in reversed(self.chat_history):
+			if element.get("role") == "user":
+				return element["content"]
+
+		# No element with role 'user' found
+		return None
+	
+	def stream_query_complete(self) -> Iterator[Dict]:
+		"""
+		Retrive the context from the vectorstore, craft a prompt and
+		send it to the LLM for completion.
+		"""
+		query_str = self.get_last_user_message()
+		streaming_response = self.query_engine.custom_query(query_str)
+		for text in streaming_response.response_gen:
+			yield text
+	
+	def stream_chat(self) -> Iterator[Dict]:
+		""" 
+		Iterator that streams the answere from the LLM server.
+		"""
+		messages = [
+			ChatMessage(role=mess["role"], content=mess["content"])
+			for mess in self.chat_history
+		]
+		stream = self.llm.stream_chat(messages)
+		for r in stream:
+			yield r.delta

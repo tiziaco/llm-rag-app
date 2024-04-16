@@ -21,6 +21,6 @@ def render_chat():
 
 		# Display assistant response in chat message container
 		with st.chat_message("assistant"):
-			response = st.write_stream(stream_data)
+			response = st.write_stream(rag.stream_query_complete)
 		if isinstance(response, str):
 			rag.chat_history.append({"role": "assistant", "content": response})
