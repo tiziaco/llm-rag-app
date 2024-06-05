@@ -1,7 +1,7 @@
 import os
 import streamlit as st
 
-from .callbacks import stream_data
+# from .callbacks import stream_data
 from llm_rag import rag
 
 def render_chat():
